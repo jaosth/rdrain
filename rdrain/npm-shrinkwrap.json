@@ -20,12 +20,6 @@
       "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-15.5.1.tgz",
       "dev": true
     },
-    "@types/react-hot-loader": {
-      "version": "3.0.3",
-      "from": "@types/react-hot-loader@3.0.3",
-      "resolved": "https://registry.npmjs.org/@types/react-hot-loader/-/react-hot-loader-3.0.3.tgz",
-      "dev": true
-    },
     "@types/react-router": {
       "version": "4.0.12",
       "from": "@types/react-router@4.0.12",
