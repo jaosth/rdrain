@@ -20,5 +20,10 @@
         /// </summary>
         /// <returns>If true, the drain should activate</returns>
         Task<IEnumerable<RoofPuddleState>> UpdateFromRoofDrainAsync();
+
+        /// <summary>
+        /// Add water
+        /// </summary>
+        Task SetWater(double gallons);
     }
 }

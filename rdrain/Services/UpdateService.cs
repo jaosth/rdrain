@@ -45,6 +45,19 @@
         }
 
         /// <inheritdoc />
+        public async Task SetWater(double gallons)
+        {
+            (var applicationState, var etag) = await this.stateService.GetApplicationStateAsync();
+
+            foreach(var roofPuddleState in applicationState.RoofPuddleStates)
+            {
+                roofPuddleState.EstimatedGallonsRemaining = gallons;
+            }
+
+            await this.stateService.SetApplicationStateAsync(applicationState, etag);
+        }
+
+        /// <inheritdoc />
         public async Task<IEnumerable<RoofPuddleState>> UpdateFromRoofDrainAsync()
         {
             (var applicationState, var etag) = await this.stateService.GetApplicationStateAsync();
@@ -62,14 +75,13 @@
                 }
                 else
                 {
-                    var gallonsDrained = elapsed.TotalMinutes * roofPuddleConfig.DrainRateGallonsPerMinute;
+                    var gallonsDrained = roofPuddleState.DrainedAtLastObservationTime ? elapsed.TotalMinutes * roofPuddleConfig.DrainRateGallonsPerMinute : 0;
+                    roofPuddleState.EstimatedGallonsRemaining = Math.Max(0, roofPuddleState.EstimatedGallonsRemaining - gallonsDrained);
 
                     this.telemetryClient.TrackEvent(
                         "Drain",
                         new Dictionary<string, string> { ["puddle"] = roofPuddleConfig.Name },
-                        new Dictionary<string, double> { ["gallons"] = gallonsDrained });
-
-                    roofPuddleState.EstimatedGallonsRemaining = Math.Max(0, roofPuddleState.EstimatedGallonsRemaining - gallonsDrained);
+                        new Dictionary<string, double> { ["gallons"] = gallonsDrained, ["remaining"] = roofPuddleState.EstimatedGallonsRemaining, });
                 }
 
                 roofPuddleState.LastDrainObservationTime = now;
