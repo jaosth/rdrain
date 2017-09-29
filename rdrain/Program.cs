@@ -14,13 +14,13 @@ namespace rdrain
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
-        }
+            var webHost = 
+                WebHost.CreateDefaultBuilder(args)
+                    .UseApplicationInsights()
+                    .UseStartup<Startup>()
+                    .Build();
 
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseApplicationInsights()
-                .UseStartup<Startup>()
-                .Build();
+            webHost.Run();
+        }
     }
 }
