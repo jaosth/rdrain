@@ -47,7 +47,7 @@ namespace RoofDrain.Controllers
         /// Update from the roof drain
         /// </summary>
         [HttpGet("updatefromroofdrain()")]
-        [ProducesResponseType(typeof(IDictionary<string,double>), 200)]
+        [ProducesResponseType(typeof(IDictionary<string,bool>), 200)]
         public async Task<IActionResult> UpdateFromRoofDrainAsync([FromQuery]string apiKey)
         {
             if (this.apiKey != null && apiKey != this.apiKey)
@@ -55,7 +55,7 @@ namespace RoofDrain.Controllers
                 return Unauthorized();
             }
 
-            return Ok((await this.updateService.UpdateFromRoofDrainAsync()).ToDictionary(x => x.Name, x => x.EstimatedGallonsRemaining));
+            return Ok((await this.updateService.UpdateFromRoofDrainAsync()).ToDictionary(x => x.Name, x => x.DrainedAtLastObservationTime));
         }
 
         /// <summary>
