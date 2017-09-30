@@ -82,5 +82,13 @@
             var serialized = JsonConvert.SerializeObject(applicationState, this.jsonSerializerSettings);
             await blockBlobReference.UploadTextAsync(serialized, new AccessCondition { IfMatchETag = etag }, null, null);
         }
+
+        /// <inheritdoc />
+        public Task ResetAsync()
+        {
+            var containerReference = this.cloudBlobClient.GetContainerReference("state");
+            var blockBlobReference = containerReference.GetBlockBlobReference(this.stateKey);
+            return blockBlobReference.DeleteIfExistsAsync();
+        }
     }
 }

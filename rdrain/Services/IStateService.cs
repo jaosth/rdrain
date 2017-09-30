@@ -27,5 +27,10 @@
         /// Retrieve the weather state
         /// </summary>
         Task SetApplicationStateAsync(ApplicationState applicationState, string etag);
+
+        /// <summary>
+        /// Reset everything
+        /// </summary>
+        Task ResetAsync();
     }
 }

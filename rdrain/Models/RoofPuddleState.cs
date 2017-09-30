@@ -26,5 +26,10 @@
         /// The estimated number of gallons remaining on the roof
         /// </summary>
         public double EstimatedGallonsRemaining { get; set; }
+
+        /// <summary>
+        /// The temperature of the roof
+        /// </summary>
+        public double Temperature { get; set; }
     }
 }

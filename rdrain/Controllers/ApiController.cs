@@ -87,5 +87,20 @@ namespace RoofDrain.Controllers
             await this.updateService.SetWater(gallons ?? 200);
             return Ok();
         }
+
+        /// <summary>
+        /// Request update from the weather stations
+        /// </summary>
+        [HttpGet("reset()")]
+        public async Task<IActionResult> Reset([FromQuery]string apiKey)
+        {
+            if (this.apiKey != null && apiKey != this.apiKey)
+            {
+                return Unauthorized();
+            }
+
+            await this.stateService.ResetAsync();
+            return Ok();
+        }
     }
 }

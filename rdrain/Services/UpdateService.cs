@@ -76,6 +76,9 @@
                 else
                 {
                     var gallonsDrained = roofPuddleState.DrainedAtLastObservationTime ? elapsed.TotalMinutes * roofPuddleConfig.DrainRateGallonsPerMinute : 0;
+
+                    gallonsDrained += 0.1; // Evaporation factor, ~5 gallons per day
+
                     roofPuddleState.EstimatedGallonsRemaining = Math.Max(0, roofPuddleState.EstimatedGallonsRemaining - gallonsDrained);
 
                     this.telemetryClient.TrackEvent(
@@ -85,7 +88,13 @@
                 }
 
                 roofPuddleState.LastDrainObservationTime = now;
-                roofPuddleState.DrainedAtLastObservationTime = roofPuddleState.EstimatedGallonsRemaining > 0;
+
+                var quarterInchGallons = (roofPuddleConfig.AreaSquareFeet * (0.25 / 12.0)) * 7.48052;
+
+                roofPuddleState.DrainedAtLastObservationTime = 
+                    roofPuddleState.Temperature > 4.0 &&
+                    ((roofPuddleState.DrainedAtLastObservationTime && roofPuddleState.EstimatedGallonsRemaining > 0) ||
+                     (roofPuddleState.EstimatedGallonsRemaining > quarterInchGallons));
 
                 return roofPuddleState.DrainedAtLastObservationTime;
             }).ToArray();
@@ -97,7 +106,7 @@
         /// <inheritdoc />
         public async Task UpdateFromWeatherStationsAsync()
         {
-            var values = new ConcurrentBag<(string station, double value, DateTimeOffset observationTime)>();
+            var values = new ConcurrentBag<(string station, double value, double temperatureCelsius, DateTimeOffset observationTime)>();
 
             await Task.WhenAll(this.weatherUndergroundConfig.Stations.Select(async x =>
             {
@@ -113,7 +122,8 @@
 
                     var extracted = Double.Parse(currentObservation.Value<string>("precip_1hr_in"));
                     var observationTime = DateTimeOffset.Parse(currentObservation.Value<string>("observation_time_rfc822"));
-                    
+                    var temperatureCelsius = currentObservation.Value<double>("temp_c");
+
                     this.telemetryClient.TrackEvent(
                         "WeatherStationUpdate",
                         new Dictionary<string, string>
@@ -121,9 +131,13 @@
                             ["Station"] = x,
                             ["observation_time_rfc822"] = observationTime.ToString()
                         },
-                        new Dictionary<string, double> { ["precip_1hr_in"] = extracted });
+                        new Dictionary<string, double>
+                        {
+                            ["precip_1hr_in"] = extracted,
+                            ["temp_c"] = temperatureCelsius
+                        });
 
-                    values.Add((x, extracted, observationTime));
+                    values.Add((x, extracted, temperatureCelsius, observationTime));
                 }
                 catch(Exception e)
                 {
@@ -155,17 +169,22 @@
                 return elapsed.TotalHours * value.value;
             });
 
+            var averageTemperature = values.Select(x => x.temperatureCelsius).Average();
             var rainfall = adjustedValues.Select(x => Math.Max(0, Math.Min(ImpossiblyCrazyStormInchesPerHour, x))).Average();
 
             this.telemetryClient.TrackEvent(
                 "RainfallUpdate",
                 null,
-                new Dictionary<string, double> { ["rainfall"] = rainfall });
+                new Dictionary<string, double>
+                {
+                    ["rainfall"] = rainfall,
+                    ["temperature"] = averageTemperature
+                });
 
-            foreach(var roofPuddleConfig in this.roofPuddleConfigs)
+            foreach (var roofPuddleConfig in this.roofPuddleConfigs)
             {
                 var roofPuddleState = GetOrAddRoofPuddleState(applicationState, roofPuddleConfig.Name);
-              
+
                 const double cubicInchesPerGallon = 231;
                 var toAdd = (roofPuddleConfig.AreaSquareFeet * (12 * 12) * rainfall) / cubicInchesPerGallon;
 
@@ -175,6 +194,7 @@
                     new Dictionary<string, double> { ["gallons"] = rainfall });
 
                 roofPuddleState.EstimatedGallonsRemaining += toAdd;
+                roofPuddleState.Temperature = averageTemperature;
             }
 
             await this.stateService.SetApplicationStateAsync(applicationState, etag);
