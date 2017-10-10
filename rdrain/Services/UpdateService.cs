@@ -89,12 +89,12 @@
 
                 roofPuddleState.LastDrainObservationTime = now;
 
-                var quarterInchGallons = (roofPuddleConfig.AreaSquareFeet * (0.25 / 12.0)) * 7.48052;
+                var sixteenthInchInGallons = (roofPuddleConfig.AreaSquareFeet * (0.0625 / 12.0)) * 7.48052;
 
                 roofPuddleState.DrainedAtLastObservationTime = 
                     roofPuddleState.Temperature > 4.0 &&
                     ((roofPuddleState.DrainedAtLastObservationTime && roofPuddleState.EstimatedGallonsRemaining > 0) ||
-                     (roofPuddleState.EstimatedGallonsRemaining > quarterInchGallons));
+                     (roofPuddleState.EstimatedGallonsRemaining > sixteenthInchInGallons));
 
                 return roofPuddleState.DrainedAtLastObservationTime;
             }).ToArray();
