@@ -152,20 +152,16 @@
             var adjustedValues = values.Select(value =>
             {
                 var stationState = GetOrAddWeatherStationState(applicationState, value.station);
-                var elapsed = value.observationTime - stationState.LastObservationTime;
-
-                if(elapsed > OverlyLongWeatherDelay)
-                {
-                    elapsed = OverlyLongWeatherDelay;
-                }
-
+                var lastObservationTime = stationState.LastObservationTime;
                 stationState.LastObservationTime = value.observationTime;
 
-                if((now - value.observationTime) > OverlyLongWeatherDelay || (value.observationTime - now) > OverlyLongWeatherDelay)
+                var elapsed = value.observationTime - lastObservationTime;
+                
+                if(elapsed < TimeSpan.Zero || elapsed > OverlyLongWeatherDelay)
                 {
                     return 0;
                 }
-
+                
                 return elapsed.TotalHours * value.value;
             });
 
@@ -191,7 +187,7 @@
                 this.telemetryClient.TrackEvent(
                     "Rain",
                     new Dictionary<string, string> { ["puddle"] = roofPuddleConfig.Name },
-                    new Dictionary<string, double> { ["gallons"] = rainfall });
+                    new Dictionary<string, double> { ["gallons"] = toAdd });
 
                 roofPuddleState.EstimatedGallonsRemaining += toAdd;
                 roofPuddleState.Temperature = averageTemperature;
