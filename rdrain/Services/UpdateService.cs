@@ -154,12 +154,7 @@
                 var stationState = GetOrAddWeatherStationState(applicationState, value.station);
                 var lastObservationTime = stationState.LastObservationTime;
                 stationState.LastObservationTime = value.observationTime;
-                
-                if(lastObservationTime >= value.observationTime)
-                {
-                    return 0;
-                }
-                
+
                 var elapsed = value.observationTime - lastObservationTime;
                 
                 if(elapsed < TimeSpan.Zero || elapsed > OverlyLongWeatherDelay)
