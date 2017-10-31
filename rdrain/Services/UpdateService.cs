@@ -155,14 +155,14 @@
                 var lastObservationTime = stationState.LastObservationTime;
                 stationState.LastObservationTime = value.observationTime;
                 
-                if(stationState.LastObservationTime >= value.observationTime)
+                if(lastObservationTime >= value.observationTime)
                 {
                     return 0;
                 }
                 
-                var elapsed = value.observationTime - stationState.LastObservationTime;
+                var elapsed = value.observationTime - lastObservationTime;
                 
-                if(elapsed < 0 || elapsed > OverlyLongWeatherDelay)
+                if(elapsed < TimeSpan.Zero || elapsed > OverlyLongWeatherDelay)
                 {
                     return 0;
                 }
