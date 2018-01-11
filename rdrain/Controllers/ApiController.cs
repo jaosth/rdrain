@@ -42,6 +42,21 @@ namespace RoofDrain.Controllers
         }
 
         /// <summary>
+        /// Get the state
+        /// </summary>
+        [HttpGet("statetext")]
+        [ProducesResponseType(typeof(string), 200)]
+        public IActionResult GetStateText()
+        {
+            if (!this.memoryCache.TryGetValue("state", out var state))
+            {
+                return Ok("State unavailable");
+            }
+
+            return Ok(MakeStatusResponse((RoofDrainState)state));
+        }
+
+        /// <summary>
         /// Update the state
         /// </summary>
         [HttpPost("state")]
@@ -107,7 +122,7 @@ namespace RoofDrain.Controllers
                 }
                 else
                 {
-                    return Ok(JObject.Parse(String.Format(statusResponseFormatString, MakeStatusResponse((RoofDrainState)state))));
+                    return Ok(JObject.Parse(statusResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
                 }
             }
             else if (requestType == "IntentRequest" && intentName == "Drain")
@@ -128,33 +143,33 @@ namespace RoofDrain.Controllers
         private string MakeStatusResponse(RoofDrainState state)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"The roof drain is {state.Message}.");
+            builder.Append($"The roof drain is {state.Message}. ");
 
             if(!state.IsDraining)
             {
                 var lastDrainedAgo = DateTimeOffset.Now - state.TimeOfLastDrain;
                 builder.Append($"It last drained ");
                 builder.Append(DurationToText(lastDrainedAgo));
-                builder.AppendLine(" ago.");
+                builder.Append(" ago. ");
             }
             else
             {
-                builder.AppendLine("It is currently draining.");
+                builder.Append("It is currently draining. ");
             }
 
             var lastPrimedAgo = DateTimeOffset.Now - state.TimeOfLastPrime;
             builder.Append($"It last primed ");
             builder.Append(DurationToText(lastPrimedAgo));
-            builder.AppendLine(" ago.");
+            builder.Append(" ago. ");
 
             var nextPrime = state.TimeOfNextPrime - DateTimeOffset.Now;
             builder.Append($"It will prime again in ");
             builder.Append(DurationToText(lastPrimedAgo));
-            builder.AppendLine(".");
+            builder.Append(". ");
 
             builder.Append($"The current temperature is {state.CurrentTemperature} degrees Celsius and the drain ");
             builder.Append(state.IsFrozen ? "is" : "is not");
-            builder.AppendLine($" frozen.");
+            builder.Append($" frozen. ");
 
             return builder.ToString();
         }
@@ -206,13 +221,13 @@ namespace RoofDrain.Controllers
 }
 ";
 
-        private string statusResponseFormatString = @"
+        private string statusResponse = @"
 {
   ""version"": ""1.0"",
   ""response"": {
     ""outputSpeech"": {
       ""type"": ""PlainText"",
-      ""text"": ""{0}""
+      ""text"": ""PLACEHOLDER""
     },
     ""shouldEndSession"": true
   }
