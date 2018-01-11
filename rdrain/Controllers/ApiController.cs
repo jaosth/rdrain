@@ -127,18 +127,8 @@ namespace RoofDrain.Controllers
                     return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
                 }
             }
-            else if (requestType == "IntentRequest" && intentName == "Drain")
+            else if (requestType == "IntentRequest" && intentName == "Start")
             {
-                // Status
-                if (!this.memoryCache.TryGetValue("state", out var state))
-                {
-                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", notAvailable)));
-                }
-                else
-                {
-                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
-                }
-                /*
                 // Drain
                 if (!this.memoryCache.TryGetValue("state", out var cachedState))
                 {
@@ -161,7 +151,6 @@ namespace RoofDrain.Controllers
 
                 this.memoryCache.Set("drain", (bool?)true, TimeSpan.FromMinutes(5));
                 return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", $"Ok, the roof drain is starting.")));
-                */
             }
             else
             {
