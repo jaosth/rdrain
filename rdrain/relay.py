@@ -24,7 +24,7 @@ def getSerial():
 def getSetting(file):
     with open(file,"r") as keyFile:
         key = keyFile.readline()
-        return key
+        return key.rstrip()
 
 ser = getSerial()
 key = getSetting("key")
@@ -38,7 +38,9 @@ try:
         line = ser.readline();
         try:
             parsed = json.loads(line)
-            response = requests.post(endpoint + "?apiKey=" + key, data=parsed)
+            url = endpoint + "?apiKey=" + key
+            print(url)
+            response = requests.post(url, json=parsed)
             print(response.status_code, response.reason)
             if response.status_code == 200:
                 data = response.json()
@@ -48,4 +50,3 @@ try:
             print(str(e))
 except Exception, e:
     print(str(e))
-

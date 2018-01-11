@@ -58,13 +58,14 @@ namespace RoofDrain.Controllers
                 TimeOfLastPrime = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfLastPrime),
                 IsDraining = body.IsDraining,
                 IsFrozen = body.IsFrozen,
+                Message = body.Message,
                 TimeOfLastDrain = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfLastDrain),
                 TimeOfNextPrime = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfNextPrime),
-                Updated = now,
+                Updated = now
             };
 
             this.memoryCache.Set("state", newState, TimeSpan.FromMinutes(5));
-            return Ok();
+            return Ok(new { Drain = false });
         }
     }
 }
