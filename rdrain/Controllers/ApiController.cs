@@ -3,6 +3,7 @@ namespace RoofDrain.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json.Linq;
     using RoofDrain.Models;
     using System;
 
@@ -67,5 +68,31 @@ namespace RoofDrain.Controllers
             this.memoryCache.Set("state", newState, TimeSpan.FromMinutes(5));
             return Ok(new { Drain = false });
         }
+
+        /// <summary>
+        /// Update the state
+        /// </summary>
+        [HttpPost("alexa")]
+        public IActionResult Alexa([FromBody]JObject body)
+        {
+            return Ok(JObject.Parse(test));
+        }
+        
+        private string test = @"
+{
+  ""version"": ""1.0"",
+  ""response"": {
+    ""outputSpeech"": {
+      ""type"": ""PlainText"",
+      ""text"": ""Test plain text response""
+    },
+    ""shouldEndSession"": true
+  }
+}
+";
     }
+
+
+
+
 }
