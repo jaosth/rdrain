@@ -44,9 +44,10 @@ try:
             print(response.status_code, response.reason)
             if response.status_code == 200:
                 data = response.json()
-                if data.drain == True:
+                if data["drain"] == True:
                     ser.writeline("d")
         except Exception, e:
             print(str(e))
 except Exception, e:
     print(str(e))
+
