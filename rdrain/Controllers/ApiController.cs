@@ -1,12 +1,10 @@
 namespace RoofDrain.Controllers
 {
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using RoofDrain.Models;
-    using RoofDrain.Services;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
+    using System;
 
     /// <summary>
     /// Main api controller
@@ -15,91 +13,57 @@ namespace RoofDrain.Controllers
     public class ApiController : Controller
     {
         private readonly string apiKey;
-        private readonly IStateService stateService;
-        private readonly IUpdateService updateService;
+        private readonly IMemoryCache memoryCache;
 
         /// <summary>
         /// Instantiated by pipeline
         /// </summary>
-        public ApiController(IConfiguration configurationParam, IStateService stateServiceParam, IUpdateService updateServiceParam)
+        public ApiController(IMemoryCache memoryCacheParam, IConfiguration configurationParam)
         {
             this.apiKey = configurationParam["Authorization:ApiKey"];
-            this.stateService = stateServiceParam;
-            this.updateService = updateServiceParam;
+            this.memoryCache = memoryCacheParam;
         }
 
         /// <summary>
         /// Get the state
         /// </summary>
         [HttpGet("state")]
-        [ProducesResponseType(typeof(ApplicationState), 200)]
-        public async Task<IActionResult> GetState([FromQuery]string apiKey)
+        [ProducesResponseType(typeof(RoofDrainState), 200)]
+        public IActionResult GetState()
         {
-            if(this.apiKey != null && apiKey != this.apiKey)
+            if(!this.memoryCache.TryGetValue("state", out var state))
             {
-                return Unauthorized();
+                return Ok("State unavailable");
             }
 
-            return Ok((await this.stateService.GetApplicationStateAsync()).applicationState);
+            return Ok(state);
         }
 
         /// <summary>
-        /// Update from the roof drain
+        /// Update the state
         /// </summary>
-        [HttpGet("updatefromroofdrain()")]
-        [ProducesResponseType(typeof(IDictionary<string,bool>), 200)]
-        public async Task<IActionResult> UpdateFromRoofDrainAsync([FromQuery]string apiKey)
+        [HttpPost("state")]
+        public IActionResult PostState([FromBody]RoofDrainPostBody body, [FromQuery]string apiKey)
         {
             if (this.apiKey != null && apiKey != this.apiKey)
             {
                 return Unauthorized();
             }
 
-            return Ok((await this.updateService.UpdateFromRoofDrainAsync()).ToDictionary(x => x.Name, x => x.DrainedAtLastObservationTime));
-        }
+            var now = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time");
 
-        /// <summary>
-        /// Request update from the weather stations
-        /// </summary>
-        [HttpGet("updatefromweatherstations()")]
-        public async Task<IActionResult> UpdateFromWeatherStationsAsync([FromQuery]string apiKey)
-        {
-            if (this.apiKey != null && apiKey != this.apiKey)
+            var newState = new RoofDrainState
             {
-                return Unauthorized();
-            }
+                CurrentTemperature = body.CurrentTemperature,
+                TimeOfLastPrime = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfLastPrime),
+                IsDraining = body.IsDraining,
+                IsFrozen = body.IsFrozen,
+                TimeOfLastDrain = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfLastDrain),
+                TimeOfNextPrime = now - TimeSpan.FromMilliseconds(body.CurrentTime - body.TimeOfNextPrime),
+                Updated = now,
+            };
 
-            await this.updateService.UpdateFromWeatherStationsAsync();
-            return Ok();
-        }
-
-        /// <summary>
-        /// Request update from the weather stations
-        /// </summary>
-        [HttpGet("setwater()")]
-        public async Task<IActionResult> AddWater([FromQuery]string apiKey, [FromQuery]double? gallons)
-        {
-            if (this.apiKey != null && apiKey != this.apiKey)
-            {
-                return Unauthorized();
-            }
-            
-            await this.updateService.SetWater(gallons ?? 200);
-            return Ok();
-        }
-
-        /// <summary>
-        /// Request update from the weather stations
-        /// </summary>
-        [HttpGet("reset()")]
-        public async Task<IActionResult> Reset([FromQuery]string apiKey)
-        {
-            if (this.apiKey != null && apiKey != this.apiKey)
-            {
-                return Unauthorized();
-            }
-
-            await this.stateService.ResetAsync();
+            this.memoryCache.Set("state", newState, TimeSpan.FromMinutes(5));
             return Ok();
         }
     }

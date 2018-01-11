@@ -1,22 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
 namespace rdrain
 {
+    using Microsoft.AspNetCore;
+    using Microsoft.AspNetCore.Hosting;
+
+    /// <summary>
+    /// Entry point
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// Standard web host
+        /// </summary>
         public static void Main(string[] args)
         {
             var webHost = 
                 WebHost.CreateDefaultBuilder(args)
-                    .UseApplicationInsights()
                     .UseStartup<Startup>()
                     .Build();
 

@@ -4,7 +4,6 @@ namespace rdrain
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using RoofDrain.Services;
 
     /// <summary>
     /// Standard startup
@@ -30,8 +29,7 @@ namespace rdrain
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddScoped<IUpdateService,UpdateService>();
-            services.AddScoped<IStateService,StateService>();
+            services.AddMemoryCache();
         }
 
         /// <summary>
