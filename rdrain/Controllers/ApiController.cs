@@ -33,7 +33,7 @@ namespace RoofDrain.Controllers
         [ProducesResponseType(typeof(RoofDrainState), 200)]
         public IActionResult GetState()
         {
-            if(!this.memoryCache.TryGetValue("state", out var state))
+            if (!this.memoryCache.TryGetValue("state", out var state))
             {
                 return Ok("State unavailable");
             }
@@ -84,7 +84,7 @@ namespace RoofDrain.Controllers
             this.memoryCache.Set("state", newState, TimeSpan.FromMinutes(5));
 
             var shouldDrain = (bool?)this.memoryCache.Get("drain");
-            if(shouldDrain == true)
+            if (shouldDrain == true)
             {
                 this.memoryCache.Remove("drain");
             }
@@ -104,32 +104,53 @@ namespace RoofDrain.Controllers
             {
                 return NotFound();
             }
-            
+
             var requestType = body.Value<JObject>("request").Value<string>("type");
             var intentName = body.Value<JObject>("request").Value<JObject>("intent")?.Value<string>("name");
 
-            if(requestType == "IntentRequest" && intentName == "AMAZON.HelpIntent")
+            const string notAvailable = "The roof drain is not currently available. It may be powered down or disconnected.";
+
+            if (requestType == "IntentRequest" && intentName == "AMAZON.HelpIntent")
             {
                 // Help
-                return Ok(JObject.Parse(helpResponse));
+                return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", "You may ask the roof drain for status or to drain the roof.")));
             }
             else if (requestType == "LaunchRequest" || (requestType == "IntentRequest" && intentName == "Status"))
             {
                 // Status
                 if (!this.memoryCache.TryGetValue("state", out var state))
                 {
-                    return Ok(JObject.Parse(statusNotAvailableResponse));
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", notAvailable)));
                 }
                 else
                 {
-                    return Ok(JObject.Parse(statusResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
                 }
             }
             else if (requestType == "IntentRequest" && intentName == "Drain")
             {
                 // Drain
+                if (!this.memoryCache.TryGetValue("state", out var cachedState))
+                {
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", notAvailable)));
+                }
+
+                var state = (RoofDrainState)cachedState;
+
+                if (state.IsDraining)
+                {
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", "The roof drain is already draining. While it is draining, it will continue to re-prime every hour.")));
+                }
+
+                var lastPrimedAgo = DateTimeOffset.Now - ((RoofDrainState)state).TimeOfLastPrime;
+
+                if (lastPrimedAgo > TimeSpan.Zero && lastPrimedAgo < TimeSpan.FromMinutes(15))
+                {
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", $"The roof drain primed only {lastPrimedAgo.Minutes} minutes ago. You must wait an additional {(TimeSpan.FromMinutes(15) - lastPrimedAgo).Minutes} minutes before asking the roof drain to start again.")));
+                }
+
                 this.memoryCache.Set("drain", (bool?)true, TimeSpan.FromMinutes(5));
-                return Ok(JObject.Parse(drainResponse));
+                return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", $"Ok, the roof drain is starting.")));
             }
             else
             {
@@ -145,7 +166,7 @@ namespace RoofDrain.Controllers
             var builder = new StringBuilder();
             builder.Append($"The roof drain is {state.Message}. ");
 
-            if(!state.IsDraining)
+            if (!state.IsDraining)
             {
                 var lastDrainedAgo = DateTimeOffset.Now - state.TimeOfLastDrain;
                 builder.Append($"It last drained ");
@@ -164,10 +185,10 @@ namespace RoofDrain.Controllers
 
             var nextPrime = state.TimeOfNextPrime - DateTimeOffset.Now;
             builder.Append($"It will prime again in ");
-            builder.Append(DurationToText(lastPrimedAgo));
+            builder.Append(DurationToText(nextPrime));
             builder.Append(". ");
 
-            builder.Append($"The current temperature is {state.CurrentTemperature} degrees Celsius and the drain ");
+            builder.Append($"The current temperature is {(state.CurrentTemperature * 1.8) + 32} degrees and the drain ");
             builder.Append(state.IsFrozen ? "is" : "is not");
             builder.Append($" frozen. ");
 
@@ -181,7 +202,7 @@ namespace RoofDrain.Controllers
         {
             var builder = new StringBuilder();
 
-            if(duration < TimeSpan.FromMinutes(1))
+            if (duration < TimeSpan.FromMinutes(1))
             {
                 duration = TimeSpan.FromMinutes(1);
             }
@@ -208,20 +229,7 @@ namespace RoofDrain.Controllers
             return builder.ToString();
         }
 
-        private string helpResponse = @"
-{
-  ""version"": ""1.0"",
-  ""response"": {
-    ""outputSpeech"": {
-      ""type"": ""PlainText"",
-      ""text"": ""You may ask the roof drain for status or to drain the roof.""
-    },
-    ""shouldEndSession"": true
-  }
-}
-";
-
-        private string statusResponse = @"
+        private string simpleResponse = @"
 {
   ""version"": ""1.0"",
   ""response"": {
@@ -233,32 +241,5 @@ namespace RoofDrain.Controllers
   }
 }
 ";
-
-        private string statusNotAvailableResponse = @"
-{
-  ""version"": ""1.0"",
-  ""response"": {
-    ""outputSpeech"": {
-      ""type"": ""PlainText"",
-      ""text"": ""Status is not currently available. The roof drain may be powered down or disconnected.""
-    },
-    ""shouldEndSession"": true
-  }
-}
-";
-
-        private string drainResponse = @"
-{
-  ""version"": ""1.0"",
-  ""response"": {
-    ""outputSpeech"": {
-      ""type"": ""PlainText"",
-      ""text"": ""Ok, the roof drain will drain the roof.""
-    },
-    ""shouldEndSession"": true
-  }
-}
-";
-
     }
 }
