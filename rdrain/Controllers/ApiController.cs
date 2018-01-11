@@ -129,6 +129,16 @@ namespace RoofDrain.Controllers
             }
             else if (requestType == "IntentRequest" && intentName == "Drain")
             {
+                // Status
+                if (!this.memoryCache.TryGetValue("state", out var state))
+                {
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", notAvailable)));
+                }
+                else
+                {
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", MakeStatusResponse((RoofDrainState)state))));
+                }
+                /*
                 // Drain
                 if (!this.memoryCache.TryGetValue("state", out var cachedState))
                 {
@@ -139,7 +149,7 @@ namespace RoofDrain.Controllers
 
                 if (state.IsDraining)
                 {
-                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", "The roof drain is already draining. While it is draining, it will continue to re-prime every hour.")));
+                    return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", "The roof drain is already draining.")));
                 }
 
                 var lastPrimedAgo = DateTimeOffset.Now - ((RoofDrainState)state).TimeOfLastPrime;
@@ -151,6 +161,7 @@ namespace RoofDrain.Controllers
 
                 this.memoryCache.Set("drain", (bool?)true, TimeSpan.FromMinutes(5));
                 return Ok(JObject.Parse(simpleResponse.Replace("PLACEHOLDER", $"Ok, the roof drain is starting.")));
+                */
             }
             else
             {
@@ -188,7 +199,7 @@ namespace RoofDrain.Controllers
             builder.Append(DurationToText(nextPrime));
             builder.Append(". ");
 
-            builder.Append($"The current temperature is {(state.CurrentTemperature * 1.8) + 32} degrees and the drain ");
+            builder.Append($"The current temperature is {(int)((state.CurrentTemperature * 1.8) + 32)} degrees and the drain ");
             builder.Append(state.IsFrozen ? "is" : "is not");
             builder.Append($" frozen. ");
 
