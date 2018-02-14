@@ -18,22 +18,22 @@
         /// <summary>
         /// The current time on the drain device
         /// </summary>
-        public int CurrentTime { get; set; }
+        public uint CurrentTime { get; set; }
 
         /// <summary>
         /// The last time the drain primed
         /// </summary>
-        public int TimeOfLastPrime { get; set; }
+        public uint TimeOfLastPrime { get; set; }
 
         /// <summary>
         /// The last time the drain drained
         /// </summary>
-        public int TimeOfLastDrain { get; set; }
+        public uint TimeOfLastDrain { get; set; }
 
         /// <summary>
         /// The next time the drain was primed
         /// </summary>
-        public int TimeOfNextPrime { get; set; }
+        public uint TimeOfNextPrime { get; set; }
 
         /// <summary>
         /// If true, the drain is draining
